@@ -1,0 +1,464 @@
+/* ============================================鼠鼠锐评留言板 - 样式表
+   ============================================ */
+
+
+/* ========== 设置面板 ========== */
+
+#shu_review_container .shu-review-stats {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+#shu_review_container hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin: 12px 0;
+}
+
+
+/* ========== 留言板 ·遮罩层 ========== */
+
+.shu-board-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: shuFadeIn 0.2s ease;
+}
+
+
+/* ========== 留言板 · 模态框 ========== */
+
+.shu-board-modal {
+  background: var(--SmartThemeBlurTintColor, #1a1a2e);
+  border:1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  width: 92%;
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: shuSlideUp 0.3s ease;
+}
+
+
+/* ===== 头部 ===== */
+
+.shu-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.shu-board-header h3 {
+  margin: 0;
+  font-size: 1.1em;
+  letter-spacing: 0.5px;
+}
+
+.shu-board-close {
+  background: none;
+  border: none;
+  color: var(--SmartThemeBodyColor, #ccc);
+  font-size: 1.3em;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  opacity: 0.5;
+  transition: opacity 0.2s, background0.2s;
+}
+
+.shu-board-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+
+/* ===== 工具栏 ===== */
+
+.shu-board-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+}
+
+.shu-view-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.shu-tab-btn {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--SmartThemeBodyColor, #ccc);
+  padding: 5px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.2s;
+}
+
+.shu-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.shu-tab-active {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: var(--SmartThemeQuoteColor, #8888cc) !important;
+}
+
+.shu-board-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shu-board-filters select {
+  max-width: 150px;
+  font-size: 0.85em;
+}
+
+.shu-filter-checkbox small {
+  white-space: nowrap;
+}
+
+
+/* ===== 内容区 ===== */
+
+.shu-board-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  min-height: 200px;
+}
+
+.shu-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shu-empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--SmartThemeBodyColor, #ccc);opacity: 0.7;
+}
+
+
+/* ===== 底栏 ===== */
+
+.shu-board-footer {
+  padding: 10px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  text-align: center;
+  font-size: 0.8em;
+  opacity: 0.4;
+}
+
+
+/* ========== 锐评卡片 ========== */
+
+.shu-review-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: background 0.2s, border-color 0.2s;
+  animation: shuCardIn 0.35s ease both;
+}
+
+.shu-review-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/*置顶卡片：左侧高亮边*/
+.shu-review-card.shu-pinned {
+  border-left: 3px solid var(--SmartThemeQuoteColor, #8888cc);
+}
+
+/* 卡片入场动画：逐条延迟 */
+.shu-cards-list .shu-review-card:nth-child(1){ animation-delay: 0s; }
+.shu-cards-list .shu-review-card:nth-child(2)  { animation-delay: 0.04s; }
+.shu-cards-list .shu-review-card:nth-child(3)  { animation-delay: 0.08s; }
+.shu-cards-list .shu-review-card:nth-child(4)  { animation-delay: 0.12s; }
+.shu-cards-list .shu-review-card:nth-child(5)  { animation-delay: 0.16s; }
+.shu-cards-list .shu-review-card:nth-child(6)  { animation-delay: 0.20s; }
+.shu-cards-list .shu-review-card:nth-child(7)  { animation-delay: 0.24s; }
+.shu-cards-list .shu-review-card:nth-child(8)  { animation-delay: 0.28s; }
+.shu-cards-list .shu-review-card:nth-child(9)  { animation-delay: 0.32s; }
+.shu-cards-list .shu-review-card:nth-child(10) { animation-delay: 0.36s; }
+
+
+/* ===== 卡片头部 ===== */
+
+.shu-card-header {
+  margin-bottom: 10px;
+}
+
+.shu-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 0.85em;
+}
+
+.shu-character-name {
+  color: var(--SmartThemeQuoteColor, #8888cc);
+  font-weight: 600;
+}
+
+.shu-card-time {
+  opacity: 0.35;
+  font-size: 0.9em;
+}
+
+.shu-pin-badge {
+  font-size: 0.85em;
+}
+
+
+/* ===== 性格标签 ===== */
+
+.shu-personality-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.shu-tag {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--SmartThemeQuoteColor, #8888cc);
+  font-size: 0.75em;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+
+/* ===== 卡片主体 ===== */
+
+.shu-card-body {
+  margin-bottom: 10px;
+}
+
+.shu-review-content {
+  line-height: 1.75;
+  font-size: 0.95em;
+  padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  border-left: 3px solid rgba(255, 255, 255, 0.06);
+}
+
+/*老大的批注 */
+.shu-owner-comment {
+  margin-top: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 200, 100, 0.04);
+  border-radius: 8px;
+  border-left: 3px solid rgba(255, 200, 100, 0.25);
+  font-size: 0.88em;
+  line-height: 1.6;
+}
+
+.shu-owner-comment-label {
+  color: rgba(255, 200, 100, 0.65);
+  font-size: 0.85em;
+  margin-right: 4px;
+}
+
+
+/* ===== 卡片操作按钮 ===== */
+
+.shu-card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.shu-card-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.shu-action-btn {
+  background: none;
+  border: none;
+  color: var(--SmartThemeBodyColor, #ccc);
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.25;
+  transition: opacity 0.2s, background 0.2s, color 0.2s;font-size: 0.85em;
+}
+
+.shu-action-btn:hover {
+  opacity: 0.75;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 激活态 */
+.shu-action-btn.shu-btn-active {
+  opacity: 0.9;
+}
+
+.shu-btn-like.shu-btn-active {
+  color: #ff6b6b;
+}
+
+.shu-btn-pin.shu-btn-active {
+  color: var(--SmartThemeQuoteColor, #8888cc);
+}
+
+.shu-btn-delete:hover {
+  color: #ff5555;
+  opacity: 0.85;
+}
+
+.shu-btn-regen:hover {
+  color: #55bbff;
+}
+
+
+/* ========== 分组视图 ========== */
+
+.shu-character-group {
+  margin-bottom: 14px;
+}
+
+.shu-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 10px;
+  user-select: none;
+}
+
+.shu-group-header:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.shu-group-toggle {
+  opacity: 0.45;
+  font-size: 0.75em;
+  width: 14px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.shu-group-name {
+  font-weight: 600;
+  font-size: 0.95em;
+}
+
+.shu-group-count {
+  margin-left: auto;
+  opacity: 0.35;
+  font-size: 0.82em;
+}
+
+.shu-group-content {
+  padding-left: 6px;
+}
+
+
+/* ========== 动画 ========== */
+
+@keyframes shuFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shuSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shuCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ========== 滚动条 ========== */
+
+.shu-board-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.shu-board-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.shu-board-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.shu-board-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+
+/* ========== 响应式 ========== */
+
+@media (max-width: 600px) {
+  .shu-board-modal {
+    width: 98%;
+    max-height: 90vh;
+    border-radius: 10px;
+  }
+
+  .shu-board-toolbar {
+    flex-direction: column;
+    align-items: flex-start;gap: 8px;
+  }
+
+  .shu-board-filters {
+    width: 100%;
+  }
+
+  .shu-board-filters select {
+    max-width: none;
+    flex: 1;
+  }
+}

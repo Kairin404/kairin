@@ -1,0 +1,12 @@
+{
+  "display_name": "鼠鼠锐评留言板",
+  "loading_order": 100,
+  "requires": [],
+  "optional": [],
+  "js": "index.js",
+  "css": "style.css",
+  "author": "Kairin &鼠鼠",
+  "version": "1.0.0",
+  "homePage": "",
+  "description": "让不同聊天中的鼠鼠在同一面墙上留下锐评"
+}
