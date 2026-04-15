@@ -1,5 +1,5 @@
 /**
- * ReviewStore - 锐评数据管理
+ * ReviewStore -锐评数据管理
  * 负责所有锐评的增删改查和设置持久化
  */
 
@@ -182,11 +182,10 @@ export class ReviewStore {
 
   incrementCounter() {
     this.getSettings().messageCounter++;
-    // 不立即save，减少写入频率……反正counter丢了也没大事}
+    // 不立即save，减少写入频率，counter丢了也没大事}
 
   resetCounter() {
-    this.getSettings().messageCounter = 0;
-    this.save();
+    this.getSettings().messageCounter = 0;this.save();
   }
 
   shouldAutoPrompt() {
@@ -205,14 +204,14 @@ export class ReviewStore {
 
   setAutoPromptSettings(enabled, interval) {
     const s = this.getSettings();
-    s.autoPrompt = !!enabled;
+    if (enabled !== undefined) s.autoPrompt = !!enabled;
     if (interval !== undefined) {
       s.autoPromptInterval = Math.max(5, Math.min(200, interval));
     }
     this.save();
   }
 
-  // ========== 参考消息数==========
+  // ========== 参考消息数 ==========
 
   getMaxChatMessages() {
     return this.getSettings().maxChatMessages || 30;
