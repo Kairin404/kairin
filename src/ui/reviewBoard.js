@@ -11,16 +11,26 @@ export class ReviewBoard {
     this.callbacks = callbacks;
     this.$overlay = null;
     this.viewMode = 'timeline';
-    this.filter = {};}
+    this.filter = {};
+  }
 
   isOpen() {
+    // 双重检查：引用存在 且 DOM还在文档中
+    if (this.$overlay && !$.contains(document.documentElement, this.$overlay[0])) {
+      this.$overlay = null;
+    }
     return !!this.$overlay;
   }
 
   open() {
     if (this.$overlay) {
-      this.refresh();
-      return;
+      // 安全检查：如果DOM已经不在文档中，清掉引用重新创建
+      if (!$.contains(document.documentElement, this.$overlay[0])) {
+        this.$overlay = null;
+      } else {
+        this.refresh();
+        return;
+      }
     }
     this._createOverlay();
     this._renderContent();
@@ -28,11 +38,12 @@ export class ReviewBoard {
   }
 
   close() {
+    // 先解绑全局ESC监听
+    $(document).off('keydown.shu_board');
+
     if (this.$overlay) {
-      this.$overlay.fadeOut(180, () => {
-        this.$overlay.remove();
-        this.$overlay = null;
-      });
+      this.$overlay.remove();
+      this.$overlay = null;
     }
   }
 
@@ -42,7 +53,7 @@ export class ReviewBoard {
     this._renderContent();
   }
 
-  //========== 构建浮层 ==========
+  // ========== 构建浮层 ==========
 
   _createOverlay() {
     const charOptions = this._buildCharacterOptions();
@@ -81,7 +92,8 @@ export class ReviewBoard {
               </label>
               <label class="shu-filter-label" title="只看点赞">
                 <input type="checkbox" class="shu-filter-liked" /> ❤️
-              </label></div>
+              </label>
+            </div>
           </div>
 
           <div class="shu-board-content">
@@ -140,7 +152,6 @@ export class ReviewBoard {
   }
 
   _renderByCharacter($content, reviews) {
-    // 按角色分组
     const groups = new Map();
     reviews.forEach(r => {
       const name = r.characterName || '未知角色';
@@ -166,46 +177,59 @@ export class ReviewBoard {
   // ========== 事件绑定 ==========
 
   _bindEvents() {
-    // 关闭
-    this.$overlay.on('click', '.shu-board-close', () => this.close());
-    this.$overlay.on('click', (e) => {
-      if ($(e.target).hasClass('shu-board-overlay')) this.close();
+    const self = this;
+
+    // ===== 关闭相关（三重保险）=====
+
+    // 1. 关闭按钮 — 直接绑定到按钮本身，不依赖事件委托
+    this.$overlay.find('.shu-board-close').on('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      self.close();
     });
 
-    // ESC 关闭
-    this._escHandler = (e) => {
-      if (e.key === 'Escape' && this.isOpen()) this.close();
-    };
-    $(document).on('keydown.shu_board', this._escHandler);
+    // 2. 点击背景关闭 — container 阻止冒泡，overlay 直接关闭
+    this.$overlay.find('.shu-board-container').on('click', (e) => {
+      e.stopPropagation();
+    });
+    this.$overlay.on('click', () => {
+      self.close();
+    });
 
-    // 视图切换
+    // 3. ESC 关闭
+    $(document).off('keydown.shu_board').on('keydown.shu_board', (e) => {
+      if (e.key === 'Escape' && self.isOpen()) {
+        self.close();
+      }
+    });
+
+    // ===== 视图切换 =====
     this.$overlay.on('click', '.shu-view-btn', (e) => {
+      e.stopPropagation();
       const view = $(e.currentTarget).data('view');
-      this.viewMode = view;
-      this.$overlay.find('.shu-view-btn').removeClass('active');
+      self.viewMode = view;
+      self.$overlay.find('.shu-view-btn').removeClass('active');
       $(e.currentTarget).addClass('active');
-      this._renderContent();
+      self._renderContent();
     });
 
-    // 筛选：角色
+    // ===== 筛选 =====
     this.$overlay.on('change', '.shu-filter-character', (e) => {
-      this.filter.characterName = $(e.target).val() || undefined;
-      this._renderContent();
+      self.filter.characterName = $(e.target).val() || undefined;
+      self._renderContent();
     });
 
-    // 筛选：置顶
     this.$overlay.on('change', '.shu-filter-pinned', (e) => {
-      this.filter.pinnedOnly = $(e.target).is(':checked') || undefined;
-      this._renderContent();
+      self.filter.pinnedOnly = $(e.target).is(':checked') || undefined;
+      self._renderContent();
     });
 
-    // 筛选：点赞
     this.$overlay.on('change', '.shu-filter-liked', (e) => {
-      this.filter.likedOnly = $(e.target).is(':checked') || undefined;
-      this._renderContent();
+      self.filter.likedOnly = $(e.target).is(':checked') || undefined;
+      self._renderContent();
     });
 
-    // 卡片操作：统一事件代理
+    // ===== 卡片操作（事件委托）=====
     this.$overlay.on('click', '.shu-action-btn', (e) => {
       e.stopPropagation();
       const $btn = $(e.currentTarget);
@@ -214,29 +238,30 @@ export class ReviewBoard {
 
       switch (action) {
         case 'like':
-          this.store.toggleLike(id);
-          this.refresh();
+          self.store.toggleLike(id);
+          self.refresh();
           break;
         case 'pin':
-          this.store.togglePin(id);
-          this.refresh();
+          self.store.togglePin(id);
+          self.refresh();
           break;
         case 'comment':
-          this._showCommentInput(id);
+          self._showCommentInput(id);
           break;
         case 'delete':
-          this.callbacks.onDelete(id);
+          self.callbacks.onDelete(id);
           break;
         case 'regen':
-          this.callbacks.onRegenerate(id);
+          self.callbacks.onRegenerate(id);
           break;
       }
     });
 
     // 点击已有批注 → 编辑
     this.$overlay.on('click', '.shu-card-comment', (e) => {
+      e.stopPropagation();
       const id = $(e.currentTarget).data('id');
-      this._showCommentInput(id);
+      self._showCommentInput(id);
     });
   }
 
@@ -270,30 +295,32 @@ export class ReviewBoard {
       </div>
     `;
 
-    // 插入到操作栏上方
     $card.find('.shu-card-actions').before(inputHtml);
     const $input = $card.find('.shu-comment-input');
     $input.focus();
 
-    // 如果有已有批注，选中全部文字方便修改
     if (review.ownerComment) {
       $input[0].select();
     }
 
-    // Enter = 保存
     $input.on('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        this._saveComment(reviewId, $input.val());}
+        this._saveComment(reviewId, $input.val());
+      }
       if (e.key === 'Escape') {
+        e.stopPropagation(); // 防止ESC同时关闭留言板
         $card.find('.shu-comment-input-wrap').remove();
       }
     });
 
-    // 按钮
-    $card.find('.shu-comment-save').on('click', () => {
+    $card.find('.shu-comment-save').on('click', (e) => {
+      e.stopPropagation();
       this._saveComment(reviewId, $input.val());
-    });$card.find('.shu-comment-cancel').on('click', () => {
+    });
+
+    $card.find('.shu-comment-cancel').on('click', (e) => {
+      e.stopPropagation();
       $card.find('.shu-comment-input-wrap').remove();
     });
   }
@@ -301,7 +328,8 @@ export class ReviewBoard {
   _saveComment(reviewId, commentText) {
     const trimmed = commentText.trim();
     this.store.setOwnerComment(reviewId, trimmed);
-    this.refresh();if (trimmed) {
+    this.refresh();
+    if (trimmed) {
       toastr.info('批注已保存');
     }
   }
@@ -319,7 +347,6 @@ export class ReviewBoard {
     const currentVal = $select.val();
     const options = `<option value="">全部角色</option>` + this._buildCharacterOptions();
     $select.html(options);
-    //恢复之前的选中值（如果还存在的话）
     if (currentVal) {
       $select.val(currentVal);
     }
