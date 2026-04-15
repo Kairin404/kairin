@@ -1,5 +1,5 @@
 /**
- * ReviewStore -锐评数据管理
+ * ReviewStore - 锐评数据管理
  * 负责所有锐评的增删改查和设置持久化
  */
 
@@ -12,14 +12,10 @@ export class ReviewStore {
     this._init();
   }
 
-  //========== 初始化 ==========
-
   _init() {
     if (!this.extensionSettings[SETTINGS_KEY]) {
       this.extensionSettings[SETTINGS_KEY] = this._getDefaultSettings();
     }
-
-    // 版本兼容：确保所有必需字段存在
     const s = this.getSettings();
     const defaults = this._getDefaultSettings();
     for (const [key, value] of Object.entries(defaults)) {
@@ -45,8 +41,6 @@ export class ReviewStore {
     return this.extensionSettings[SETTINGS_KEY];
   }
 
-  // ========== 用户称呼 ==========
-
   getUserNickname() {
     return this.getSettings().userNickname || '老大';
   }
@@ -55,8 +49,6 @@ export class ReviewStore {
     this.getSettings().userNickname = name;
     this.save();
   }
-
-  // ==========锐评 CRUD ==========
 
   addReview(data) {
     const review = {
@@ -70,7 +62,8 @@ export class ReviewStore {
       mode: data.mode || 'manual',
       liked: false,
       pinned: false,
-      ownerComment: '',};
+      ownerComment: '',
+    };
     this.getSettings().reviews.unshift(review);
     this.save();
     return review;
@@ -101,18 +94,8 @@ export class ReviewStore {
     return this.getSettings().reviews.find(r => r.id === id) || null;
   }
 
-  /**
-   * 获取锐评列表
-   * @param {Object} filter - 筛选条件
-   * @param {string} filter.characterName - 按角色名筛选
-   * @param {string} filter.chatId - 按聊天ID筛选
-   * @param {boolean} filter.pinnedOnly - 只看置顶
-   * @param {boolean} filter.likedOnly - 只看点赞
-   * @returns {Array} 排序后的锐评列表
-   */
   getReviews(filter = {}) {
     let reviews = [...this.getSettings().reviews];
-
     if (filter.characterName) {
       reviews = reviews.filter(r => r.characterName === filter.characterName);
     }
@@ -125,19 +108,13 @@ export class ReviewStore {
     if (filter.likedOnly) {
       reviews = reviews.filter(r => r.liked);
     }
-
-    // 排序：置顶优先 → 时间倒序
     reviews.sort((a, b) => {
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
       return b.timestamp - a.timestamp;
     });
-
     return reviews;
   }
 
-  /**
-   * 获取所有出现过的角色名（用于分组视图和筛选下拉框）
-   */
   getCharacterNames() {
     const names = new Set();
     this.getSettings().reviews.forEach(r => {
@@ -145,8 +122,6 @@ export class ReviewStore {
     });
     return Array.from(names).sort();
   }
-
-  // ========== 互动操作 ==========
 
   toggleLike(id) {
     const review = this.getReviewById(id);
@@ -178,14 +153,13 @@ export class ReviewStore {
     return false;
   }
 
-  // ========== 自动提醒 ==========
-
   incrementCounter() {
     this.getSettings().messageCounter++;
-    // 不立即save，减少写入频率，counter丢了也没大事}
+  }
 
   resetCounter() {
-    this.getSettings().messageCounter = 0;this.save();
+    this.getSettings().messageCounter = 0;
+    this.save();
   }
 
   shouldAutoPrompt() {
@@ -211,8 +185,6 @@ export class ReviewStore {
     this.save();
   }
 
-  // ========== 参考消息数 ==========
-
   getMaxChatMessages() {
     return this.getSettings().maxChatMessages || 30;
   }
@@ -222,13 +194,9 @@ export class ReviewStore {
     this.save();
   }
 
-  // ========== 统计 ==========
-
   getReviewCount() {
     return this.getSettings().reviews.length;
   }
-
-  // ========== 工具 ==========
 
   save() {
     this.saveSettingsDebounced();
