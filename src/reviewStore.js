@@ -1,6 +1,5 @@
 /**
  * ReviewStore - 锐评数据管理
- * 负责所有锐评的增删改查和设置持久化
  */
 
 const SETTINGS_KEY = 'shu_review_board';
@@ -15,8 +14,7 @@ export class ReviewStore {
   _init() {
     if (!this.extensionSettings[SETTINGS_KEY]) {
       this.extensionSettings[SETTINGS_KEY] = this._getDefaultSettings();
-    }
-    const s = this.getSettings();
+    }const s = this.getSettings();
     const defaults = this._getDefaultSettings();
     for (const [key, value] of Object.entries(defaults)) {
       if (s[key] === undefined) {
@@ -58,12 +56,12 @@ export class ReviewStore {
       chatId: data.chatId || '',
       chatTitle: data.chatTitle || '',
       personality: data.personality || [],
+      title: data.title || '',          // ★ 新增：发癫标题
       content: data.content || '',
       mode: data.mode || 'manual',
       liked: false,
       pinned: false,
-      ownerComment: '',
-    };
+      ownerComment: '',};
     this.getSettings().reviews.unshift(review);
     this.save();
     return review;
@@ -158,8 +156,7 @@ export class ReviewStore {
   }
 
   resetCounter() {
-    this.getSettings().messageCounter = 0;
-    this.save();
+    this.getSettings().messageCounter = 0;this.save();
   }
 
   shouldAutoPrompt() {
