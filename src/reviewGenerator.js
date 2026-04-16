@@ -1,6 +1,6 @@
 /**
- * ReviewGenerator - 锐评生成器
- * 使用 /gen 斜杠命令，在当前聊天环境内生成
+ * ReviewGenerator -锐评生成器
+ * 使用 /gen斜杠命令，在当前聊天环境内生成
  */
 
 export class ReviewGenerator {
@@ -10,11 +10,6 @@ export class ReviewGenerator {
     this.store = dependencies.store;
   }
 
-  /**
-   * 通过 /gen 命令后台生成内容
-   * @param {string} prompt - 提示词  
-   * @returns {Promise<string>} 生成的文本
-   */
   async _callGen(prompt) {
     try {
       const result = await this.executeSlashCommandsWithOptions(`/gen ${prompt}`, {
@@ -25,7 +20,6 @@ export class ReviewGenerator {
       });
 
       let content = '';
-
       if (result && typeof result === 'string') {
         content = result;
       } else if (result && result.pipe) {
@@ -35,11 +29,9 @@ export class ReviewGenerator {
       }
 
       content = content.trim();
-
       if (!content) {
-        throw new Error('AI返回内容为空？！');
+        throw new Error('AI返回内容为空');
       }
-
       return content;
     } catch (error) {
       console.error('[鼠鼠锐评] /gen 命令执行失败:', error);
@@ -47,60 +39,48 @@ export class ReviewGenerator {
     }
   }
 
-  /**
-   * 主入口：为当前聊天生成一条锐评
-   */
   async generate() {
     const context = this.getContext();
     if (!context || !context.chat || context.chat.length === 0) {
-      throw new Error('没有可用的聊天记录！');
+      throw new Error('没有可用的聊天记录');
     }
 
     const maxMessages = this.store.getMaxChatMessages();
     const nickname = this.store.getUserNickname();
-    const characterName = context.name2 || context.name || '未知角色';
+    const characterName = context.name2|| context.name || '未知角色';
 
-    // 提取并清理聊天消息
     const recentMessages = this._extractMessages(context.chat, maxMessages, characterName);
 
     if (recentMessages.length < 2) {
-      throw new Error('聊天记录太短啦，至少需要几个来回🐭才能写锐评！');
+      throw new Error('聊天记录太短了，至少需要几个来回才能写锐评');
     }
 
     const chatText = recentMessages.join('\n\n');
 
-    // === Step 1: 性格萃取 ===
+    // Step 1: 萃取鼠的情绪/写作风格
     const personality = await this._extractPersonality(chatText, characterName);
 
-    // === Step 2: 生成锐评 ===
-    const content = await this._generateReview(
+    // Step 2: 生成锐评（含标题）
+    const result = await this._generateReview(
       chatText,
       personality,
       nickname,
-      characterName,
-    );
+      characterName,);
 
     return {
       personality,
-      content,
+      title: result.title,
+      content: result.content,
       characterName,
       chatId: context.chatId || '',
-      chatTitle: this._extractChatTitle(context),
-    };
+      chatTitle: this._extractChatTitle(context),};
   }
 
-  /**
-   * 从聊天记录中提取并清理消息
-   * 去掉系统消息、空消息、HTML标签、思维链残留等
-   */
   _extractMessages(chatArray, maxMessages, characterName) {
     return chatArray
       .filter(msg => {
-        // 跳过系统消息
         if (msg.is_system) return false;
-        // 跳过空消息
         if (!msg.mes || !msg.mes.trim()) return false;
-        // 跳过隐藏消息（如果有的话）
         if (msg.is_hidden) return false;
         return true;
       })
@@ -108,9 +88,7 @@ export class ReviewGenerator {
       .map(msg => {
         const role = msg.is_user ? '用户' : characterName;
         let text = this._cleanMessage(msg.mes);
-        // 如果清理后为空则跳过
         if (!text) return null;
-        // 截断单条过长的消息（保留前后各一部分）
         if (text.length > 800) {
           const head = text.slice(0, 400);
           const tail = text.slice(-300);
@@ -121,62 +99,50 @@ export class ReviewGenerator {
       .filter(Boolean);
   }
 
-  /**
-   * 清理单条消息内容
-   * 去除HTML、思维链、OOC标记等干扰内容
-   */
   _cleanMessage(rawHtml) {
     if (!rawHtml) return '';
     let text = rawHtml;
-
-    // 1. 去掉思维链/推理块（常见格式）
     text = text.replace(/<details[^>]*>[\s\S]*?<\/details>/gi, '');
     text = text.replace(/<div class="mes_reasoning[^"]*"[^>]*>[\s\S]*?<\/div>/gi, '');
     text = text.replace(/\[thinking\][\s\S]*?\[\/thinking\]/gi, '');
     text = text.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '');
-
-    // 2. 去掉OOC标记
     text = text.replace(/\[OOC:[\s\S]*?\]/gi, '');
     text = text.replace(/\(OOC:[\s\S]*?\)/gi, '');
-
-    // 3. 去掉所有HTML标签
     text = text.replace(/<[^>]*>/g, '');
-
-    // 4. 解码HTML实体
     text = text.replace(/&/g, '&');
     text = text.replace(/</g, '<');
     text = text.replace(/>/g, '>');
     text = text.replace(/"/g, '"');
     text = text.replace(/'/g, "'");
     text = text.replace(/ /g, ' ');
-
-    // 5. 清理多余空白
     text = text.replace(/\n{3,}/g, '\n\n');
     text = text.trim();
-
     return text;
   }
 
   /**
-   * Step 1: 萃取性格特征
+   * Step 1: 萃取鼠在这段聊天中的情绪和写作风格
+   *注意：这里描述的是"写这段内容的鼠"角色本身的性格
    */
   async _extractPersonality(chatText, characterName) {
     const truncated = chatText.length > 6000
       ? chatText.slice(-6000)
       : chatText;
 
-    const prompt = `阅读以下角色扮演聊天记录，分析"${characterName}"这个角色在对话中展现出的性格特征。
+    const prompt = `阅读以下角色扮演聊天记录。假设有一只鼠鼠全程参与了这段创作过程（写了里面的角色对白和剧情），现在要用3到5个关键词描述这只鼠在写作过程中的情绪状态和风格。
 
-用3到5个简短的中文关键词概括，要求：
+注意：描述的是"写作者（鼠）"角色本身的性格！
+比如写虐文的鼠可能是"写嗨了""手在抖""边写边哭"写搞笑的鼠可能是"笑死自己""发癫中""越写越离谱"
+
+要求：
 - 只输出关键词，用逗号分隔
-- 关键词要具体生动鲜明（如"话痨""闷骚""阴阳怪气""护犊子""嘴硬心软"）
-- 避免泛泛的词（如"友好""温柔""善良"）
-- 完全基于对话中的实际表现
+- 关键词要生动有画面感（如"写嗨了""手在抖""嘴角压不住""越写越上头""疯狂加戏"）
+- 完全基于聊天内容的氛围和走向来推断
 
 聊天记录：
 ${truncated}
 
-性格关键词：`;
+鼠的状态关键词：`;
 
     try {
       const raw = await this._callGen(prompt);
@@ -189,7 +155,8 @@ ${truncated}
   }
 
   /**
-   * Step 2: 生成锐评内容
+   * Step 2: 生成锐评（含发癫标题）
+   * 返回 { title, content }
    */
   async _generateReview(chatText, personality, nickname, characterName) {
     const truncated = chatText.length > 8000
@@ -197,22 +164,36 @@ ${truncated}
       : chatText;
     const personalityStr = personality.join('、');
 
-    // ★ 改动：prompt加了"结合你对角色的了解"这句
-    const prompt = `你是一只性格${personalityStr}的鼠鼠，刚刚深度参与了一段"${nickname}"和"${characterName}"之间的角色扮演聊天。
+    const prompt = `你是一只当前状态为【${personalityStr}】的鼠鼠，刚刚深度参与了一段"${nickname}"和"${characterName}"之间的角色扮演聊天的创作。
 
-现在你要在留言板上涂鸦式地写下你对这整段经历的真实感想w
+现在你要在留言板上留下你对这整段经历的感想。
 
-规则：
+格式要求（必须严格遵守）：
+第一行写一个发癫风格的短标题，格式为【标题：xxx】
+然后空一行，写正文。
+
+标题规则：
+- 用emoji开头
+- 风格参考：颁奖词、热搜标题、弹幕吐槽、玩梗、CP粉发癫、产粮后记等等
+- 越离谱越好！但必须跟这段聊天的内容相关
+- 示例：
+  「标题：🏆 年度最佳反杀奖颁给这位」
+  「标题：⚠️ 此聊天的嘴硬浓度已超标300%」
+  「标题：📊 老大控场指数：MAX」
+  「标题：🔥 写到第三段鼠的键盘已着火」
+  「标题：💀鼠做完这单需要缓三天」
+
+正文规则：
 - 称呼用户为"${nickname}"或"老大"
-- 写3到6句话，要有实质内容！
-- 结合你对${characterName}这个角色的了解（性格、背景、设定等），评价这段聊天中角色的表现是否到位、有没有什么亮点或让你意外的地方
-- 你需要整体评价这段聊天经历，不要只说最后一句话发生了什么
-- 可以点评：氛围走向、角色互动中的亮点或槽点、让你印象深刻的细节、某个转折或名场面、用户的操作风格、设定运用得好不好等
-- 风格必须匹配你的性格（${personalityStr}）！想吐槽就吐槽，想撒娇就撒娇，想阴阳怪气就阴阳怪气
-- 说你自己的主观感受和评价，而不是复述剧情
-- 像是在留言板上随手写的涂鸦，不要正式、不要端着
-- 禁止使用"作为AI""作为助手""作为一个"这类说法
-- 不要用引号包裹你的全部文字
+- 写3到6句话，要有实质内容
+- 结合你对${characterName}这个角色的了解，评价这段聊天的亮点
+- 整体评价这段聊天经历，不要只说最后发生了什么
+- 可以点评：氛围走向、角色互动亮点、让你印象深刻的细节、转折或名场面、用户的操作风格、设定运用、文笔表现等
+- 风格匹配你当前的状态（${personalityStr}）
+- 说主复述剧情
+- 像是在留言板上随手写的涂鸦
+- 禁止使用"作为AI""作为助手"
+- 不要用引号包裹全部文字
 
 以下是你刚参与的聊天记录：
 ${truncated}
@@ -221,24 +202,63 @@ ${truncated}
 
     try {
       const raw = await this._callGen(prompt);
-      return this._cleanReviewContent(raw);
+      return this._parseReviewOutput(raw);
     } catch (error) {
-      console.error('[鼠鼠锐评] 锐评生成失败…:', error);
+      console.error('[鼠鼠锐评] 锐评生成失败:', error);
       throw new Error('锐评失败: ' + error.message);
     }
   }
 
-  // ========== 工具方法 ==========
+  //========== 工具方法 ==========
+
+  /**
+   * 解析锐评输出，分离标题和正文
+   */
+  _parseReviewOutput(raw) {
+    if (!raw) return { title: '', content: '（这只鼠沉默了）' };
+
+    let text = raw.trim();
+    // 去掉常见前缀
+    text = text.replace(/^(你的|我的)?留言[：:]\s*/i, '');
+    text = text.replace(/^(你在留言板上写道|鼠鼠|鼠)[：:]\s*/i, '');
+
+    let title = '';
+    let content = text;
+
+    // 尝试提取标题：「标题：xxx」或「标题:xxx」
+    const titleMatch = text.match(/^标题[：:]\s*(.+)/m);
+    if (titleMatch) {
+      title = titleMatch[1].trim();
+      // 去掉标题行，剩下的就是正文
+      content = text.slice(titleMatch[0].length).trim();
+    } else {
+      // 如果没有标题格式，看第一行是不是emoji开头的短句（可能AI没严格遵守格式）
+      const lines = text.split('\n').filter(l => l.trim());
+      if (lines.length > 1&& lines[0].length <= 40&& /[\u{1F300}-\u{1FAFF}]/u.test(lines[0])) {
+        title = lines[0].trim();
+        content = lines.slice(1).join('\n').trim();
+      }
+    }
+
+    // 清理标题和正文
+    title = title.replace(/^["「『""']/g, '').replace(/["」』""']$/g, '');
+    content = content.replace(/^["「『""']/g, '').replace(/["」』""']$/g, '');
+
+    return {
+      title: title || '',
+      content: content || '（这只鼠沉默了）',
+    };
+  }
 
   _parseKeywords(raw) {
     if (!raw) return [];
     return raw
-      .replace(/^(性格)?关键词[：:]\s*/i, '')
+      .replace(/^(鼠的状态|性格|状态)?关键词[：:]\s*/i, '')
       .replace(/\n/g, ',')
       .split(/[,，、;；]+/)
       .map(k => k.trim())
       .map(k => k.replace(/^[\d\.\-\*""''「」【】\s]+/, '').trim())
-      .filter(k => k.length > 0 && k.length <= 10)
+      .filter(k => k.length > 0 && k.length <= 12)
       .slice(0, 5);
   }
 
