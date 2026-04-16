@@ -44,7 +44,7 @@ export class ReviewCard {
       <div class="shu-card" data-id="${review.id}">
         <div class="shu-card-header">
           <div class="shu-card-meta">
-            <span class="shu-card-character">🎭 ${escapeHtml(review.characterName)}</span>
+            <span class="shu-card-character">🐭 ${escapeHtml(review.characterName)}</span>
             <span class="shu-card-time">${timeStr}</span>
             ${review.pinned ? '<span class="shu-card-pin-badge">📌</span>' : ''}
           </div>
@@ -67,7 +67,7 @@ export class ReviewCard {
           </button>
           <div style="flex:1;"></div>
           <button class="shu-action-btn shu-btn-delete"
-            data-action="delete" data-id="${review.id}" title="撕掉">
+            data-action="delete" data-id="${review.id}" title="扔掉">
             <i class="fa-regular fa-trash-can"></i>
           </button>
         </div>
