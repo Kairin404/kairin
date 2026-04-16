@@ -75,11 +75,11 @@ jQuery(async () => {
       store.resetCounter();
     });
 
-    console.log(`[鼠鼠锐评] 初始化完成！已有${store.getReviewCount()} 条锐评`);
+    console.log(`[鼠鼠锐评] 初始化完成！当前已有${store.getReviewCount()} 条锐评`);
 
   } catch (error) {
-    console.error('[鼠鼠锐评] 初始化失败:', error);
-    toastr.error('鼠鼠锐评留言板初始化失败: ' + error.message);
+    console.error('[鼠鼠锐评] 初始化失败…:', error);
+    toastr.error('锐评留言板初始化失败…: ' + error.message);
   }
 });
 
@@ -87,20 +87,20 @@ jQuery(async () => {
 
 async function handleGenerate() {
   if (isGenerating) {
-    toastr.warning('鼠鼠正在写，别催！');
+    toastr.warning('鼠鼠正在写啦，别催！');
     return;
   }
 
   const chatId = getCurrentChatId();
   if (!chatId) {
-    toastr.error('没有打开的聊天');
+    toastr.error('没有打开的聊天！');
     return;
   }
 
   try {
     isGenerating = true;
     settingsPanel.setGenerating(true);
-    toastr.info('鼠鼠正在酝酿锐评...', '', { timeOut: 2000 });
+    toastr.info('🐭酝酿中...', '', { timeOut: 2000 });
 
     const result = await generator.generate();
 
@@ -120,8 +120,8 @@ async function handleGenerate() {
     settingsPanel.updateCount();
 
   } catch (error) {
-    console.error('[鼠鼠锐评] 生成失败:', error);
-    toastr.error('锐评失败: ' + error.message);
+    console.error('[鼠鼠锐评] 生成失败…:', error);
+    toastr.error('锐评失败…: ' + error.message);
   } finally {
     isGenerating = false;
     settingsPanel.setGenerating(false);
