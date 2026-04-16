@@ -1,14 +1,10 @@
 /**
  * ReviewCard - 单条锐评卡片
- * 纯HTML生成，事件由ReviewBoard统一代理
+ * 已移除重写按钮（重写功能移到预览弹窗）
+ * 性格标签加了"这只鼠的特质"备注
  */
 
 export class ReviewCard {
-  /**
-   * 渲染一张锐评卡片
-   * @param {Object} review - 锐评数据对象
-   * @returns {string} HTML字符串
-   */
   static render(review) {
     const personalityHtml = (review.personality || [])
       .map(p => `<span class="shu-tag">${escapeHtml(p)}</span>`)
@@ -25,7 +21,15 @@ export class ReviewCard {
     const pinnedClass = review.pinned ? 'active' : '';
     const heartIcon = review.liked ? 'fa-solid' : 'fa-regular';
 
-    // 老大的批注区域
+    // 性格标签区域（加了备注）
+    const tagsSection = personalityHtml
+      ? `<div class="shu-card-tags">
+           <span class="shu-tag-label">🐭 这只鼠的特质</span>
+           ${personalityHtml}
+         </div>`
+      : '';
+
+    // 老大的批注
     let commentHtml = '';
     if (review.ownerComment) {
       commentHtml = `
@@ -41,9 +45,10 @@ export class ReviewCard {
         <div class="shu-card-header">
           <div class="shu-card-meta">
             <span class="shu-card-character">🎭 ${escapeHtml(review.characterName)}</span>
-            <span class="shu-card-time">${timeStr}</span>${review.pinned ? '<span class="shu-card-pin-badge">📌</span>' : ''}
+            <span class="shu-card-time">${timeStr}</span>
+            ${review.pinned ? '<span class="shu-card-pin-badge">📌</span>' : ''}
           </div>
-          <div class="shu-card-tags">${personalityHtml}</div>
+          ${tagsSection}
         </div>
         <div class="shu-card-body">${escapeHtml(review.content)}</div>
         ${commentHtml}
@@ -61,10 +66,7 @@ export class ReviewCard {
             <i class="fa-regular fa-comment"></i>
           </button>
           <div style="flex:1;"></div>
-          <button class="shu-action-btn shu-btn-regen"
-            data-action="regen" data-id="${review.id}" title="重写这条">
-            <i class="fa-solid fa-rotate"></i>
-          </button><button class="shu-action-btn shu-btn-delete"
+          <button class="shu-action-btn shu-btn-delete"
             data-action="delete" data-id="${review.id}" title="撕掉">
             <i class="fa-regular fa-trash-can"></i>
           </button>
@@ -74,9 +76,6 @@ export class ReviewCard {
   }
 }
 
-/**
- * HTML转义
- */
 function escapeHtml(str) {
   if (!str) return '';
   return str
