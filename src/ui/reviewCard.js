@@ -1,7 +1,5 @@
 /**
  * ReviewCard - 单条锐评卡片
- * 已移除重写按钮（重写功能移到预览弹窗）
- * 性格标签加了"这只鼠的特质"备注
  */
 
 export class ReviewCard {
@@ -21,15 +19,19 @@ export class ReviewCard {
     const pinnedClass = review.pinned ? 'active' : '';
     const heartIcon = review.liked ? 'fa-solid' : 'fa-regular';
 
-    // 性格标签区域（加了备注）
+    // 性格标签
     const tagsSection = personalityHtml
-      ? `<div class="shu-card-tags">
-           <span class="shu-tag-label">🐭 这只鼠的特质</span>
+      ? `<div class="shu-card-tags"><span class="shu-tag-label">🐭 这只鼠的状态</span>
            ${personalityHtml}
          </div>`
       : '';
 
-    // 老大的批注
+    // 发癫标题
+    const titleHtml = review.title
+      ? `<div class="shu-card-title">${escapeHtml(review.title)}</div>`
+      : '';
+
+    // 老大批注
     let commentHtml = '';
     if (review.ownerComment) {
       commentHtml = `
@@ -44,17 +46,16 @@ export class ReviewCard {
       <div class="shu-card" data-id="${review.id}">
         <div class="shu-card-header">
           <div class="shu-card-meta">
-            <span class="shu-card-character">🐭 ${escapeHtml(review.characterName)}</span>
-            <span class="shu-card-time">${timeStr}</span>
-            ${review.pinned ? '<span class="shu-card-pin-badge">📌</span>' : ''}
+            <span class="shu-card-character">🎭 ${escapeHtml(review.characterName)}</span>
+            <span class="shu-card-time">${timeStr}</span>${review.pinned ? '<span class="shu-card-pin-badge">📌</span>' : ''}
           </div>
           ${tagsSection}
         </div>
+        ${titleHtml}
         <div class="shu-card-body">${escapeHtml(review.content)}</div>
         ${commentHtml}
         <div class="shu-card-actions">
-          <button class="shu-action-btn shu-btn-like ${likedClass}"
-            data-action="like" data-id="${review.id}" title="点赞">
+          <button class="shu-action-btn shu-btn-like ${likedClass}"data-action="like" data-id="${review.id}" title="点赞">
             <i class="${heartIcon} fa-heart"></i>
           </button>
           <button class="shu-action-btn shu-btn-pin ${pinnedClass}"
@@ -67,7 +68,7 @@ export class ReviewCard {
           </button>
           <div style="flex:1;"></div>
           <button class="shu-action-btn shu-btn-delete"
-            data-action="delete" data-id="${review.id}" title="扔掉">
+            data-action="delete" data-id="${review.id}" title="撕掉">
             <i class="fa-regular fa-trash-can"></i>
           </button>
         </div>
