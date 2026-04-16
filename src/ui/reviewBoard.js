@@ -17,12 +17,11 @@ export class ReviewBoard {
       const el = document.getElementById('shu-board-overlay');
       if (el) el.remove();
       if (self.$overlay) {
-        try { self.$overlay.remove(); } catch (e) { /* 忽略 */ }
+        try { self.$overlay.remove(); } catch (e) { /*忽略 */ }
         self.$overlay = null;
       }
       try { $(document).off('keydown.shu_board'); } catch (e) { /* 忽略 */ }
-    };
-  }
+    };}
 
   isOpen() {
     if (this.$overlay) {
@@ -40,16 +39,14 @@ export class ReviewBoard {
 
     this._createOverlay();
     this._renderContent();
-    this._bindEvents();
-  }
+    this._bindEvents();}
 
   close() {
     $(document).off('keydown.shu_board');
     if (this.$overlay) {
       try { this.$overlay.remove(); } catch (e) { /* 忽略 */ }
       this.$overlay = null;
-    }
-    const el = document.getElementById('shu-board-overlay');
+    }const el = document.getElementById('shu-board-overlay');
     if (el) el.remove();
   }
 
@@ -65,7 +62,6 @@ export class ReviewBoard {
     const html = `
       <div id="shu-board-overlay" class="shu-board-overlay">
         <div class="shu-board-container" id="shu-board-container">
-
           <div class="shu-board-header">
             <div class="shu-board-title">
               <span style="font-size: 1.4em;">🐭</span>
@@ -78,7 +74,6 @@ export class ReviewBoard {
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
-
           <div class="shu-board-toolbar">
             <div class="shu-view-toggle">
               <button class="shu-view-btn active" data-view="timeline">
@@ -86,8 +81,7 @@ export class ReviewBoard {
               </button>
               <button class="shu-view-btn" data-view="character">
                 <i class="fa-solid fa-masks-theater"></i> 按角色
-              </button>
-            </div>
+              </button></div>
             <div class="shu-filters">
               <select class="shu-filter-character">
                 <option value="">全部角色</option>
@@ -97,20 +91,33 @@ export class ReviewBoard {
                 <input type="checkbox" class="shu-filter-pinned" />📌
               </label>
               <label class="shu-filter-label" title="只看点赞">
-                <input type="checkbox" class="shu-filter-liked" /> ❤️
-              </label>
-            </div>
+                <input type="checkbox" class="shu-filter-liked" />❤️
+              </label></div>
           </div>
-
           <div class="shu-board-content"></div>
-
         </div>
       </div>
     `;
 
-    this.$overlay = $(html);
-    $('body').append(this.$overlay);
-    this.$overlay.hide().fadeIn(180);
+    //★ 修复移动端：先用原生DOM插入，再用jQuery引用，不用fadeIn
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = html.trim();
+    const overlayEl = wrapper.firstChild;
+    document.body.appendChild(overlayEl);
+
+    //强制重排，确保移动端浏览器正确渲染
+    overlayEl.offsetHeight;
+
+    this.$overlay = $(overlayEl);
+
+    // 短延迟后添加可见性（用CSS transition代替fadeIn）
+    overlayEl.style.opacity = '0';
+    overlayEl.style.transition = 'opacity 0.18s ease';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        overlayEl.style.opacity = '1';
+      });
+    });
   }
 
   _renderContent() {
@@ -123,8 +130,8 @@ export class ReviewBoard {
 
     if (reviews.length === 0) {
       const hasFilter = this.filter.characterName || this.filter.pinnedOnly || this.filter.likedOnly;
-      const emptyMsg = hasFilter ? '没有符合筛选条件的锐评喔' : '墙上还什么都没有呢……';
-      const emptyHint = hasFilter ? '试试换个筛选条件嘛？' : '去聊聊天然后让🐭「写锐评」吧！';
+      const emptyMsg = hasFilter ? '没有符合筛选条件的锐评' : '墙上还什么都没有呢……';
+      const emptyHint = hasFilter ? '试试换个筛选条件？' : '去聊聊天然后点「写锐评」吧！';
       $content.html(`
         <div class="shu-empty-state">
           <div style="font-size: 3em; margin-bottom: 10px;">🐭</div>
@@ -158,7 +165,7 @@ export class ReviewBoard {
     for (const [name, groupReviews] of groups) {
       html += `<div class="shu-character-group">
         <div class="shu-group-header">
-          <span class="shu-group-name">🐭 ${this._escapeHtml(name)}</span>
+          <span class="shu-group-name">🎭 ${this._escapeHtml(name)}</span>
           <span class="shu-group-count">${groupReviews.length} 条</span>
         </div>
         ${groupReviews.map(r => ReviewCard.render(r)).join('')}
@@ -170,22 +177,29 @@ export class ReviewBoard {
   _bindEvents() {
     const self = this;
 
-    this.$overlay.find('.shu-board-close').on('click', function (e) {
+    // 关闭按钮
+    this.$overlay.find('.shu-board-close').on('click touchend', function (e) {
       e.preventDefault();
       e.stopPropagation();
       self.close();
     });
 
+    // 点击背景关闭
     const container = document.getElementById('shu-board-container');
     if (container) {
       container.addEventListener('click', e => e.stopPropagation(), true);
+      container.addEventListener('touchend', e => e.stopPropagation(), true);
     }
 
     const overlay = document.getElementById('shu-board-overlay');
     if (overlay) {
       overlay.addEventListener('click', () => self.close());
+      overlay.addEventListener('touchend', (e) => {
+        if (e.target === overlay) self.close();
+      });
     }
 
+    // ESC
     $(document).off('keydown.shu_board').on('keydown.shu_board', function (e) {
       if (e.key === 'Escape' && self.isOpen()) self.close();
     });
@@ -261,8 +275,7 @@ export class ReviewBoard {
           value="${this._escapeHtml(review.ownerComment || '')}" />
         <button class="shu-comment-save menu_button" title="保存">
           <i class="fa-solid fa-check"></i>
-        </button>
-        <button class="shu-comment-cancel menu_button" title="取消">
+        </button><button class="shu-comment-cancel menu_button" title="取消">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
