@@ -12,7 +12,7 @@ export class ReviewGenerator {
 
   /**
    * 通过 /gen 命令后台生成内容
-   * @param {string} prompt - 提示词
+   * @param {string} prompt - 提示词  
    * @returns {Promise<string>} 生成的文本
    */
   async _callGen(prompt) {
@@ -197,15 +197,17 @@ ${truncated}
       : chatText;
     const personalityStr = personality.join('、');
 
+    // ★ 改动：prompt加了"结合你对角色的了解"这句
     const prompt = `你是一只性格${personalityStr}的鼠鼠，刚刚深度参与了一段"${nickname}"和"${characterName}"之间的角色扮演聊天。
 
-现在你要在留言板上涂鸦式地写下你对这整段经历的真实感想。
+现在你要在留言板上涂鸦式地写下你对这整段经历的真实感想w
 
 规则：
 - 称呼用户为"${nickname}"或"老大"
 - 写3到6句话，要有实质内容！
+- 结合你对${characterName}这个角色的了解（性格、背景、设定等），评价这段聊天中角色的表现是否到位、有没有什么亮点或让你意外的地方
 - 你需要整体评价这段聊天经历，不要只说最后一句话发生了什么
-- 可以点评：氛围走向、角色互动中的亮点或槽点、让你印象深刻的细节、某个转折或名场面、用户的操作风格等
+- 可以点评：氛围走向、角色互动中的亮点或槽点、让你印象深刻的细节、某个转折或名场面、用户的操作风格、设定运用得好不好等
 - 风格必须匹配你的性格（${personalityStr}）！想吐槽就吐槽，想撒娇就撒娇，想阴阳怪气就阴阳怪气
 - 说你自己的主观感受和评价，而不是复述剧情
 - 像是在留言板上随手写的涂鸦，不要正式、不要端着
@@ -221,7 +223,7 @@ ${truncated}
       const raw = await this._callGen(prompt);
       return this._cleanReviewContent(raw);
     } catch (error) {
-      console.error('[鼠鼠锐评] 锐评生成失败:', error);
+      console.error('[鼠鼠锐评] 锐评生成失败…:', error);
       throw new Error('锐评失败: ' + error.message);
     }
   }
