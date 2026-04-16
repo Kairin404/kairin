@@ -109,7 +109,7 @@ async function handleGenerate() {
       mode: 'manual',
     });
 
-    toastr.success('锐评已上墙！');
+    toastr.success('锐评上版啦！');
 
     if (board.isOpen()) {
       board.refresh();
@@ -121,7 +121,7 @@ async function handleGenerate() {
 
   } catch (error) {
     console.error('[鼠鼠锐评] 生成失败:', error);
-    toastr.error('锐评生成失败: ' + error.message);
+    toastr.error('锐评失败: ' + error.message);
   } finally {
     isGenerating = false;
     settingsPanel.setGenerating(false);
@@ -134,17 +134,17 @@ function handleOpenBoard() {
 
 async function handleDelete(reviewId) {
   const confirm = await callGenericPopup(
-    '确定要撕掉这条锐评吗？撕了就没了哦。',
+    '确定要扔掉这条锐评吗？扔了就没了哦w',
     POPUP_TYPE.CONFIRM,
     '',
-    { okButton: '撕掉', cancelButton: '算了' },
+    { okButton: '扔！', cancelButton: '算了' },
   );
 
   if (confirm === POPUP_RESULT.AFFIRMATIVE) {
     store.deleteReview(reviewId);
     board.refresh();
     settingsPanel.updateCount();
-    toastr.info('锐评已撕掉');
+    toastr.info('锐评已扔掉✨');
   }
 }
 
@@ -153,19 +153,19 @@ async function handleDelete(reviewId) {
  */
 async function handleRewrite(reviewId) {
   if (isGenerating) {
-    toastr.warning('鼠鼠正在写，别催！');
+    toastr.warning('鼠鼠这就重做😭');
     return;
   }
 
   const chatId = getCurrentChatId();
   if (!chatId) {
-    toastr.error('没有打开的聊天');
+    toastr.error('没有打开的聊天！');
     return;
   }
 
   try {
     isGenerating = true;
-    toastr.info('鼠鼠正在重写...', '', { timeOut: 2000 });
+    toastr.info('鼠鼠正在重做...', '', { timeOut: 2000 });
 
     const result = await generator.generate();
 
@@ -177,7 +177,7 @@ async function handleRewrite(reviewId) {
 
     // 拿更新后的review数据
     const updatedReview = store.getReviewById(reviewId);
-    toastr.success('锐评已重写！');
+    toastr.success('锐评已重新出锅！');
 
     if (board.isOpen()) {
       board.refresh();
@@ -190,8 +190,8 @@ async function handleRewrite(reviewId) {
     settingsPanel.updateCount();
 
   } catch (error) {
-    console.error('[鼠鼠锐评] 重写失败:', error);
-    toastr.error('重写失败: ' + error.message);
+    console.error('[鼠鼠锐评] 重做失败…:', error);
+    toastr.error('重做失败…: ' + error.message);
   } finally {
     isGenerating = false;
   }
@@ -199,34 +199,8 @@ async function handleRewrite(reviewId) {
 
 // ========== UI辅助 ==========
 
-async function showAutoPrompt() {
-  const html = `
-    <div style="text-align: center; padding: 10px;">
-      <div style="font-size: 2.5em; margin-bottom: 8px;">🐭</div>
-      <div>鼠鼠探头：聊了这么久了，</div>
-      <div>要不要让鼠在留言板上写点什么？</div>
-    </div>
-  `;
-
-  const confirm = await callGenericPopup(
-    html,
-    POPUP_TYPE.CONFIRM,
-    '',
-    { okButton: '写！', cancelButton: '下次吧' },
-  );
-
-  if (confirm === POPUP_RESULT.AFFIRMATIVE) {
-    await handleGenerate();
-  }
-}
-
-/**
- * 锐评预览弹窗
- * "好耶"旁边有"重写"按钮
- */
 async function showReviewPreview(review) {
-  const personalityTags = review.personality
-    .map(p => `<span style="
+  const personalityTags = review.personality.map(p => `<span style="
       display: inline-block;
       padding: 2px 8px;
       margin: 0 4px 4px 0;
@@ -237,11 +211,11 @@ async function showReviewPreview(review) {
     ">${escapeHtml(p)}</span>`)
     .join('');
 
+  //★ 改动：最外层div加了max-height 和 overflow-y
   const html = `
-    <div style="text-align: left; padding: 10px;">
+    <div style="text-align: left; padding: 10px; max-height: 60vh; overflow-y: auto;">
       <div style="margin-bottom: 8px; color: var(--SmartThemeQuoteColor); font-size: 0.85em;">
-        🎭 ${escapeHtml(review.characterName)}
-        <span style="margin-left: 8px; opacity: 0.6;">
+        ✨${escapeHtml(review.characterName)}<span style="margin-left: 8px; opacity: 0.6;">
           ${new Date(review.timestamp).toLocaleString('zh-CN')}
         </span>
       </div>
@@ -253,19 +227,18 @@ async function showReviewPreview(review) {
         border-radius: 8px;
         border-left: 3px solid var(--SmartThemeQuoteColor);
         line-height: 1.65;
+        white-space: pre-wrap;
+        word-break: break-word;
       ">${escapeHtml(review.content)}</div>
     </div>
   `;
 
-  // 用CONFIRM类型弹窗，okButton=好耶，cancelButton=重写
   const result = await callGenericPopup(
     html,
     POPUP_TYPE.CONFIRM,
     '',
-    { okButton: '好耶 ✓', cancelButton: '🔄 重写' },
-  );
+    { okButton: '好耶！！ ✓', cancelButton: '😡 给我重写！' },);
 
-  // 如果点了"重写"（即取消按钮）
   if (result !== POPUP_RESULT.AFFIRMATIVE) {
     await handleRewrite(review.id);
   }
