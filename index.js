@@ -8,7 +8,7 @@ import {
   event_types,
   getCurrentChatId,
   saveSettingsDebounced,
-  generateRaw,
+  generateQuietPrompt,  // ← 改这里
 } from '../../../../script.js';
 
 import {
@@ -46,7 +46,7 @@ jQuery(async () => {
 
     // 2. 生成器
     generator = new ReviewGenerator({
-      generateRaw,
+      generateQuietPrompt,  // ← 改这里
       getContext,
       store,
     });
@@ -128,7 +128,8 @@ async function handleGenerate() {
     }
 
     // 弹窗预览新锐评
-    await showReviewPreview(review);settingsPanel.updateCount();
+    await showReviewPreview(review);
+    settingsPanel.updateCount();
 
   } catch (error) {
     console.error('[鼠鼠锐评] 生成失败:', error);
@@ -197,11 +198,13 @@ async function handleRegenerate(reviewId) {
     });
 
     toastr.success('锐评已重写！');
-    board.refresh();} catch (error) {
+    board.refresh();
+  } catch (error) {
     console.error('[鼠鼠锐评] 重写失败:', error);
     toastr.error('重写失败: ' + error.message);
   } finally {
-    isGenerating = false;}
+    isGenerating = false;
+  }
 }
 
 // ========== UI辅助 ==========
