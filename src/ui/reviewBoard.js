@@ -1,5 +1,5 @@
 /**
- * ReviewBoard - 留言板弹窗主体
+ * ReviewBoard - 留言板弹窗主体 v3
  * 全屏浮层，展示所有锐评，支持分组、筛选和互动
  */
 
@@ -12,43 +12,64 @@ export class ReviewBoard {
     this.$overlay = null;
     this.viewMode = 'timeline';
     this.filter = {};
+
+    // 全局关闭函数（终极保底）
+    // 无论jQuery出什么问题，在控制台输入 __shu_close() 或点onclick都能关
+    const self = this;
+    window.__shu_close_board = function () {
+      // 1. 原生JS直接删DOM
+      const el = document.getElementById('shu-board-overlay');
+      if (el) el.remove();
+      // 2. 清理jQuery引用
+      if (self.$overlay) {
+        try { self.$overlay.remove(); } catch (e) { /* 忽略 */ }
+        self.$overlay = null;
+      }
+      // 3. 解绑ESC
+      try { $(document).off('keydown.shu_board'); } catch (e) { /* 忽略 */ }
+    };
+
+    console.log('[鼠鼠锐评] ReviewBoard v3 构造完成，全局关闭函数已注册');
   }
 
   isOpen() {
-    // 双重检查：引用存在 且 DOM还在文档中
-    if (this.$overlay && !$.contains(document.documentElement, this.$overlay[0])) {
-      this.$overlay = null;
+    // 双重检查：jQuery引用存在 且 DOM还在文档中
+    if (this.$overlay) {
+      if (!document.getElementById('shu-board-overlay')) {
+        this.$overlay = null;
+      }
     }
     return !!this.$overlay;
   }
 
   open() {
-    if (this.$overlay) {
-      // 安全检查：如果DOM已经不在文档中，清掉引用重新创建
-      if (!$.contains(document.documentElement, this.$overlay[0])) {
-        this.$overlay = null;
-      } else {
-        this.refresh();
-        return;
-      }
-    }
+    // 如果已经有残留的overlay（不管jQuery引用状态如何），先清掉
+    const existing = document.getElementById('shu-board-overlay');
+    if (existing) existing.remove();
+    this.$overlay = null;
+
     this._createOverlay();
     this._renderContent();
     this._bindEvents();
   }
 
   close() {
-    // 先解绑全局ESC监听
+    // 解绑ESC
     $(document).off('keydown.shu_board');
 
+    // jQuery方式移除
     if (this.$overlay) {
-      this.$overlay.remove();
+      try { this.$overlay.remove(); } catch (e) { /* 忽略 */ }
       this.$overlay = null;
     }
+
+    // 原生JS保底移除（防止jQuery失效）
+    const el = document.getElementById('shu-board-overlay');
+    if (el) el.remove();
   }
 
   refresh() {
-    if (!this.$overlay) return;
+    if (!this.isOpen()) return;
     this._updateCharacterFilter();
     this._renderContent();
   }
@@ -58,9 +79,10 @@ export class ReviewBoard {
   _createOverlay() {
     const charOptions = this._buildCharacterOptions();
 
+    // 关闭按钮同时用 onclick 内联事件（绕过jQuery，终极保底）
     const html = `
-      <div class="shu-board-overlay">
-        <div class="shu-board-container">
+      <div id="shu-board-overlay" class="shu-board-overlay">
+        <div class="shu-board-container" id="shu-board-container">
 
           <div class="shu-board-header">
             <div class="shu-board-title">
@@ -68,7 +90,9 @@ export class ReviewBoard {
               <h3 style="margin: 0;">留言板</h3>
               <span class="shu-board-count"></span>
             </div>
-            <button class="shu-board-close" title="关闭">
+            <button class="shu-board-close"
+              onclick="window.__shu_close_board && window.__shu_close_board()"
+              title="关闭">
               <i class="fa-solid fa-xmark"></i>
             </button>
           </div>
@@ -111,14 +135,13 @@ export class ReviewBoard {
   // ========== 渲染内容区 ==========
 
   _renderContent() {
+    if (!this.$overlay) return;
     const $content = this.$overlay.find('.shu-board-content');
     const reviews = this.store.getReviews(this.filter);
     const totalCount = this.store.getReviewCount();
 
-    // 更新计数
     this.$overlay.find('.shu-board-count').text(`${totalCount} 条涂鸦`);
 
-    // 空状态
     if (reviews.length === 0) {
       const hasFilter = this.filter.characterName || this.filter.pinnedOnly || this.filter.likedOnly;
       const emptyMsg = hasFilter
@@ -138,7 +161,6 @@ export class ReviewBoard {
       return;
     }
 
-    // 按模式渲染
     if (this.viewMode === 'character') {
       this._renderByCharacter($content, reviews);
     } else {
@@ -179,60 +201,68 @@ export class ReviewBoard {
   _bindEvents() {
     const self = this;
 
-    // ===== 关闭相关（三重保险）=====
+    // ===== 关闭相关 =====
 
-    // 1. 关闭按钮 — 直接绑定到按钮本身，不依赖事件委托
-    this.$overlay.find('.shu-board-close').on('click', (e) => {
+    // 1. X按钮 — jQuery绑定（onclick已在HTML里作为保底）
+    this.$overlay.find('.shu-board-close').on('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       self.close();
     });
 
-    // 2. 点击背景关闭 — container 阻止冒泡，overlay 直接关闭
-    this.$overlay.find('.shu-board-container').on('click', (e) => {
-      e.stopPropagation();
-    });
-    this.$overlay.on('click', () => {
-      self.close();
-    });
+    // 2. 点击背景关闭
+    //    原理：container阻止冒泡，所以只有点到container外面（=背景）才触发close
+    const container = document.getElementById('shu-board-container');
+    if (container) {
+      container.addEventListener('click', function (e) {
+        e.stopPropagation();
+      }, true);
+    }
 
-    // 3. ESC 关闭
-    $(document).off('keydown.shu_board').on('keydown.shu_board', (e) => {
+    const overlay = document.getElementById('shu-board-overlay');
+    if (overlay) {
+      overlay.addEventListener('click', function () {
+        self.close();
+      });
+    }
+
+    // 3. ESC关闭
+    $(document).off('keydown.shu_board').on('keydown.shu_board', function (e) {
       if (e.key === 'Escape' && self.isOpen()) {
         self.close();
       }
     });
 
     // ===== 视图切换 =====
-    this.$overlay.on('click', '.shu-view-btn', (e) => {
+    this.$overlay.on('click', '.shu-view-btn', function (e) {
       e.stopPropagation();
-      const view = $(e.currentTarget).data('view');
+      const view = $(this).data('view');
       self.viewMode = view;
       self.$overlay.find('.shu-view-btn').removeClass('active');
-      $(e.currentTarget).addClass('active');
+      $(this).addClass('active');
       self._renderContent();
     });
 
     // ===== 筛选 =====
-    this.$overlay.on('change', '.shu-filter-character', (e) => {
-      self.filter.characterName = $(e.target).val() || undefined;
+    this.$overlay.on('change', '.shu-filter-character', function () {
+      self.filter.characterName = $(this).val() || undefined;
       self._renderContent();
     });
 
-    this.$overlay.on('change', '.shu-filter-pinned', (e) => {
-      self.filter.pinnedOnly = $(e.target).is(':checked') || undefined;
+    this.$overlay.on('change', '.shu-filter-pinned', function () {
+      self.filter.pinnedOnly = $(this).is(':checked') || undefined;
       self._renderContent();
     });
 
-    this.$overlay.on('change', '.shu-filter-liked', (e) => {
-      self.filter.likedOnly = $(e.target).is(':checked') || undefined;
+    this.$overlay.on('change', '.shu-filter-liked', function () {
+      self.filter.likedOnly = $(this).is(':checked') || undefined;
       self._renderContent();
     });
 
     // ===== 卡片操作（事件委托）=====
-    this.$overlay.on('click', '.shu-action-btn', (e) => {
+    this.$overlay.on('click', '.shu-action-btn', function (e) {
       e.stopPropagation();
-      const $btn = $(e.currentTarget);
+      const $btn = $(this);
       const action = $btn.data('action');
       const id = $btn.data('id');
 
@@ -258,9 +288,9 @@ export class ReviewBoard {
     });
 
     // 点击已有批注 → 编辑
-    this.$overlay.on('click', '.shu-card-comment', (e) => {
+    this.$overlay.on('click', '.shu-card-comment', function (e) {
       e.stopPropagation();
-      const id = $(e.currentTarget).data('id');
+      const id = $(this).data('id');
       self._showCommentInput(id);
     });
   }
@@ -273,7 +303,6 @@ export class ReviewBoard {
 
     const $card = this.$overlay.find(`.shu-card[data-id="${reviewId}"]`);
 
-    // 如果已打开输入框，聚焦即可
     const $existing = $card.find('.shu-comment-input-wrap');
     if ($existing.length) {
       $existing.find('.shu-comment-input').focus();
@@ -303,23 +332,25 @@ export class ReviewBoard {
       $input[0].select();
     }
 
-    $input.on('keydown', (e) => {
+    const self = this;
+
+    $input.on('keydown', function (e) {
       if (e.key === 'Enter') {
         e.preventDefault();
-        this._saveComment(reviewId, $input.val());
+        self._saveComment(reviewId, $input.val());
       }
       if (e.key === 'Escape') {
-        e.stopPropagation(); // 防止ESC同时关闭留言板
+        e.stopPropagation();
         $card.find('.shu-comment-input-wrap').remove();
       }
     });
 
-    $card.find('.shu-comment-save').on('click', (e) => {
+    $card.find('.shu-comment-save').on('click', function (e) {
       e.stopPropagation();
-      this._saveComment(reviewId, $input.val());
+      self._saveComment(reviewId, $input.val());
     });
 
-    $card.find('.shu-comment-cancel').on('click', (e) => {
+    $card.find('.shu-comment-cancel').on('click', function (e) {
       e.stopPropagation();
       $card.find('.shu-comment-input-wrap').remove();
     });
@@ -343,6 +374,7 @@ export class ReviewBoard {
   }
 
   _updateCharacterFilter() {
+    if (!this.$overlay) return;
     const $select = this.$overlay.find('.shu-filter-character');
     const currentVal = $select.val();
     const options = `<option value="">全部角色</option>` + this._buildCharacterOptions();
