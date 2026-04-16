@@ -8,7 +8,6 @@ import {
   event_types,
   getCurrentChatId,
   saveSettingsDebounced,
-  generateQuietPrompt,  // ← 改这里
 } from '../../../../script.js';
 
 import {
@@ -21,6 +20,8 @@ import {
   POPUP_RESULT,
   callGenericPopup,
 } from '../../../popup.js';
+
+import { executeSlashCommandsWithOptions } from '../../../slash-commands.js';
 
 import { ReviewStore } from './src/reviewStore.js';
 import { ReviewGenerator } from './src/reviewGenerator.js';
@@ -35,7 +36,7 @@ let board = null;
 let settingsPanel = null;
 let isGenerating = false;
 
-// ========== 初始化 ==========
+//========== 初始化 ==========
 
 jQuery(async () => {
   try {
@@ -44,9 +45,9 @@ jQuery(async () => {
     // 1. 数据层
     store = new ReviewStore(extension_settings, saveSettingsDebounced);
 
-    // 2. 生成器
+    // 2. 生成器 — 传入 executeSlashCommandsWithOptions
     generator = new ReviewGenerator({
-      generateQuietPrompt,  // ← 改这里
+      executeSlashCommandsWithOptions,
       getContext,
       store,
     });
@@ -54,8 +55,7 @@ jQuery(async () => {
     // 3. 设置面板（插入到Extensions栏）
     settingsPanel = new SettingsPanel(store, {
       onGenerateClick: handleGenerate,
-      onOpenBoardClick: handleOpenBoard,
-    });
+      onOpenBoardClick: handleOpenBoard,});
     await settingsPanel.init();
 
     // 4. 留言板（弹窗式）
@@ -128,8 +128,7 @@ async function handleGenerate() {
     }
 
     // 弹窗预览新锐评
-    await showReviewPreview(review);
-    settingsPanel.updateCount();
+    await showReviewPreview(review);settingsPanel.updateCount();
 
   } catch (error) {
     console.error('[鼠鼠锐评] 生成失败:', error);
@@ -203,8 +202,7 @@ async function handleRegenerate(reviewId) {
     console.error('[鼠鼠锐评] 重写失败:', error);
     toastr.error('重写失败: ' + error.message);
   } finally {
-    isGenerating = false;
-  }
+    isGenerating = false;}
 }
 
 // ========== UI辅助 ==========
@@ -217,8 +215,7 @@ async function showAutoPrompt() {
     <div style="text-align: center; padding: 10px;">
       <div style="font-size: 2.5em; margin-bottom: 8px;">🐭</div>
       <div>鼠鼠探头：聊了这么久了，</div>
-      <div>要不要让鼠在留言板上写点什么？</div>
-    </div>
+      <div>要不要让鼠在留言板上写点什么？</div></div>
   `;
 
   const confirm = await callGenericPopup(
@@ -252,8 +249,7 @@ async function showReviewPreview(review) {
   const html = `
     <div style="text-align: left; padding: 10px;">
       <div style="margin-bottom: 8px; color: var(--SmartThemeQuoteColor); font-size: 0.85em;">
-        🎭 ${escapeHtml(review.characterName)}
-        <span style="margin-left: 8px; opacity: 0.6;">
+        🎭${escapeHtml(review.characterName)}<span style="margin-left: 8px; opacity: 0.6;">
           ${new Date(review.timestamp).toLocaleString('zh-CN')}
         </span>
       </div>
