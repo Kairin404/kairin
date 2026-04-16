@@ -37,7 +37,7 @@ export class ReviewGenerator {
       content = content.trim();
 
       if (!content) {
-        throw new Error('AI返回内容为空');
+        throw new Error('AI返回内容为空？！');
       }
 
       return content;
@@ -53,7 +53,7 @@ export class ReviewGenerator {
   async generate() {
     const context = this.getContext();
     if (!context || !context.chat || context.chat.length === 0) {
-      throw new Error('没有可用的聊天记录');
+      throw new Error('没有可用的聊天记录！');
     }
 
     const maxMessages = this.store.getMaxChatMessages();
@@ -64,7 +64,7 @@ export class ReviewGenerator {
     const recentMessages = this._extractMessages(context.chat, maxMessages, characterName);
 
     if (recentMessages.length < 2) {
-      throw new Error('聊天记录太短了，至少需要几个来回才能写锐评');
+      throw new Error('聊天记录太短啦，至少需要几个来回🐭才能写锐评！');
     }
 
     const chatText = recentMessages.join('\n\n');
