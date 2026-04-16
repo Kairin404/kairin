@@ -123,8 +123,8 @@ export class ReviewBoard {
 
     if (reviews.length === 0) {
       const hasFilter = this.filter.characterName || this.filter.pinnedOnly || this.filter.likedOnly;
-      const emptyMsg = hasFilter ? '没有符合筛选条件的锐评' : '墙上还什么都没有呢……';
-      const emptyHint = hasFilter ? '试试换个筛选条件？' : '去聊聊天然后点「写锐评」吧！';
+      const emptyMsg = hasFilter ? '没有符合筛选条件的锐评喔' : '墙上还什么都没有呢……';
+      const emptyHint = hasFilter ? '试试换个筛选条件嘛？' : '去聊聊天然后让🐭「写锐评」吧！';
       $content.html(`
         <div class="shu-empty-state">
           <div style="font-size: 3em; margin-bottom: 10px;">🐭</div>
@@ -158,7 +158,7 @@ export class ReviewBoard {
     for (const [name, groupReviews] of groups) {
       html += `<div class="shu-character-group">
         <div class="shu-group-header">
-          <span class="shu-group-name">🎭 ${this._escapeHtml(name)}</span>
+          <span class="shu-group-name">🐭 ${this._escapeHtml(name)}</span>
           <span class="shu-group-count">${groupReviews.length} 条</span>
         </div>
         ${groupReviews.map(r => ReviewCard.render(r)).join('')}
