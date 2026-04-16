@@ -562,4 +562,15 @@
     padding: 10px 12px;
     margin-bottom: 10px;
   }
+  /*----锐评标题（发癫风格）---- */
+
+.shu-card-title {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: var(--SmartThemeQuoteColor);
+  margin-bottom: 6px;
+  padding: 4px 0;
+  line-height: 1.4;
+}
+
 }
